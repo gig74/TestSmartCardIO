@@ -21,16 +21,57 @@ public class Blog {
 
             System.out.printf("  Card protocol: %s%n", card.getProtocol());
 //            System.out.printf("  Card ATR: %s%n", main(card.getATR().getBytes()));
-            String aa = bytesToHex(card.getATR().getBytes());
-            System.out.printf("  Card ATR: %s%n", aa);
+            System.out.printf("  Card ATR: %s%n", bytesToHex(card.getATR().getBytes()));
 
             var channel = card.getBasicChannel();
             int[] command = {0xFF, 0xCA, 0x00, 0x00, 0x00}; // Получение UID команда APDU
             ResponseAPDU answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
             int returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
             byte[] uid = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
-            System.out.printf("Card UID: %s%n", bytesToHex(uid));
-
+            System.out.printf("  Card UID: %s%n", bytesToHex(uid));
+//// Блок экспериментов с NTag213
+//            command = new int[]{0xFF, 0x00, 0x00, 0x00, 0x02, 0x30, 0x00}; // Чтение 16 байт начиная с нулевого блока
+//            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
+//            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
+//            byte[] read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+//            System.out.printf("  Card Read Block 0 - 3: %s%n", bytesToHex(read16Byte));
+//
+//            command = new int[]{0xFF, 0x00, 0x00, 0x00, 0x02, 0x30, 0x12}; // Чтение 16 байт начиная с 12-го блока
+//            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
+//            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
+//            read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+//            System.out.printf("Card Read Block 12 - 15: %s%n", bytesToHex(read16Byte));
+//
+//            command = new int[]{0xFF, 0x00, 0x00, 0x00, 0x05, 0x1B, 0xAA, 0xBB, 0xCC, 0xDD}; // ввод пароля
+//            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
+//            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
+//            byte[] pack = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+//            System.out.printf("  Pack auth: %s%n", bytesToHex(pack));
+//
+//            command = new int[]{0xFF, 0x00, 0x00, 0x00, 0x02, 0x30, 0x12}; // Чтение 16 байт начиная с 12-го блока
+//            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
+//            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
+//            read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+//            System.out.printf("  Card Read Block 12 - 15: %s%n", bytesToHex(read16Byte));
+//
+//            command = new int[]{0xFF, 0x00, 0x00, 0x00, 0x02, 0x30, 0x12}; // Чтение 16 байт начиная с 12-го блока
+//            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
+//            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
+//            read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+//            System.out.printf("  Card Read Block 12 - 15: %s%n", bytesToHex(read16Byte));
+//
+//            command = new int[]{0xFF, 0x00, 0x00, 0x00, 0x02, 0x30, 0x00}; // Чтение 16 байт начиная с нулевого блока
+//            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
+//            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
+//            read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+//            System.out.printf("  Card Read Block 0 - 3: %s%n", bytesToHex(read16Byte));
+//
+//            command = new int[]{0xFF, 0xCA, 0x00, 0x00, 0x00}; // Получение UID команда APDU
+//            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
+//            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
+//            uid = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+//            System.out.printf("  Card UID: %s%n", bytesToHex(uid));
+////КОНЕЦ: Блок экспериментов с NTag213
             card.disconnect(true);
 
         } catch(CardException e)
