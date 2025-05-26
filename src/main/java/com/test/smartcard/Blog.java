@@ -3,6 +3,7 @@ package com.test.smartcard;
 import com.test.smartcard.exception.CardDataException;
 
 import javax.smartcardio.*;
+import java.nio.ByteBuffer;
 import java.util.List;
 public class Blog {
     public static void main(String[] args) {
@@ -29,12 +30,73 @@ public class Blog {
             int returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
             byte[] uid = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
             System.out.printf("  Card UID: %s%n", bytesToHex(uid));
+//// Блок экспериментов с Mifare Classic 1K
+            // 1.Загрузка ключа 0xFF, 0x82, 0x00, 0x00, 0x06 + 6 байт ключ
+            //command = new int[]{0xFF, 0x82, 0x00, 0x00, 0x06, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5}; // Ключ NDEF по умольчанию для блока 0
+            command = new int[]{0xFF, 0x82, 0x00, 0x00, 0x06, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // Ключ NDEF по умольчанию для блока 0
+            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
+            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
+            byte[] read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+            System.out.printf("  Ответ загрузки ключа : %s%n", bytesToHex(ByteBuffer.allocate(4).putInt(returnCode).array() )  ) ;
+            //   System.out.printf("  Данные загрузки ключа: %s%n", bytesToHex(read16Byte));
+            //   System.out.println("");
+
+            // 2. Аутентификация сектора 0
+            // APDU команды выглядит так: FF 86 00 00 05 01 00 00 60 00
+            // CLA = FF
+            // INS = 86, команда General Authenticate
+            // P1 = 00, должен стоять ноль
+            // P2 = 00, должен стоять ноль
+            // Lc = 05, длина данных для команды, 5 байтов
+            // собственно данные, они имеют следующую структуру
+            // 01 — версия, на данный момент допускается только 01
+            // 00 — старший байт номера блока
+            // 00 — младший байт номера блока, в нашем случае мы хотим прочитать самый первый блок, он с номером 00
+            // 60 — тип ключа, который мы хотим использовать для аутентификации, 60 означает Ключ A, 61 — Ключ B.
+            // 00 — номер ячейки, в которую был записан ключ в предыдущем вызове Load Keys
+            command = new int[]{0xFF, 0x86, 0x00, 0x00, 0x05, 0x01, 0x00, 0x00, 0x61, 0x00}; // Аутентификация блока 0
+            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
+            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
+            read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+            System.out.printf("  Ответ аутентификация ключа A блок 00 : %s%n", bytesToHex(ByteBuffer.allocate(4).putInt(returnCode).array() )  ) ;
+            System.out.printf("  Данные аутентификации ключа: %s%n", bytesToHex(read16Byte));
+            System.out.println("");
+
+            // 3. Чтение блока 01
+            command = new int[]{0xFF, 0xB0, 0x00, 0x03, 0x10}; // Чтение блока 01
+            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
+            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
+            read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+            System.out.printf("  Ответ чтения блока 01: %s%n", bytesToHex(ByteBuffer.allocate(4).putInt(returnCode).array() )  ) ;
+            System.out.printf("  Данные чтения блока 01: %s%n", bytesToHex(read16Byte));
+            System.out.println("");
+
+
+            command = new int[]{0xFF, 0x86, 0x00, 0x00, 0x05, 0x01, 0x00, 0x04, 0x61, 0x00}; // Аутентификация блока 4
+            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
+            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
+            read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+            System.out.printf("  Ответ аутентификация ключа A блок 00 : %s%n", bytesToHex(ByteBuffer.allocate(4).putInt(returnCode).array() )  ) ;
+            System.out.printf("  Данные аутентификации ключа: %s%n", bytesToHex(read16Byte));
+            System.out.println("");
+
+            // 3. Чтение блока 01
+            command = new int[]{0xFF, 0xB0, 0x00, 0x07, 0x10}; // Чтение блока 01
+            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
+            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
+            read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+            System.out.printf("  Ответ чтения блока 07: %s%n", bytesToHex(ByteBuffer.allocate(4).putInt(returnCode).array() )  ) ;
+            System.out.printf("  Данные чтения блока 07: %s%n", bytesToHex(read16Byte));
+            System.out.println("");
+
+//// КОНЕЦ: Блок экспериментов с Mifare Classic 1K
 //// Блок экспериментов с NTag213
 //            command = new int[]{0xFF, 0x00, 0x00, 0x00, 0x02, 0x30, 0x00}; // Чтение 16 байт начиная с нулевого блока
 //            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
 //            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
 //            byte[] read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
 //            System.out.printf("  Card Read Block 0 - 3: %s%n", bytesToHex(read16Byte));
+//            System.out.println("");
 //
 //            command = new int[]{0xFF, 0x00, 0x00, 0x00, 0x02, 0x30, 0x12}; // Чтение 16 байт начиная с 12-го блока
 //            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
@@ -46,18 +108,21 @@ public class Blog {
 //            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
 //            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
 //            byte[] pack = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+//            System.out.printf("  Return code: %s%n", bytesToHex(ByteBuffer.allocate(4).putInt(returnCode).array() ) );
 //            System.out.printf("  Pack auth: %s%n", bytesToHex(pack));
-//
+
 //            command = new int[]{0xFF, 0x00, 0x00, 0x00, 0x02, 0x30, 0x12}; // Чтение 16 байт начиная с 12-го блока
 //            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
 //            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
 //            read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+//            System.out.printf("  Return code: %s%n", bytesToHex(ByteBuffer.allocate(4).putInt(returnCode).array() ) );
 //            System.out.printf("  Card Read Block 12 - 15: %s%n", bytesToHex(read16Byte));
 //
 //            command = new int[]{0xFF, 0x00, 0x00, 0x00, 0x02, 0x30, 0x12}; // Чтение 16 байт начиная с 12-го блока
 //            answer = channel.transmit(new CommandAPDU(intArrayToByteArray(command)));
 //            returnCode = answer.getSW(); // Код возврата APDU команды (0x9000 - нормальное завершение)
 //            read16Byte = answer.getData(); // Данные, возвращаемые по APDU команде (без кода возврата)
+//            System.out.printf("  Return code: %s%n", bytesToHex(ByteBuffer.allocate(4).putInt(returnCode).array() ) );
 //            System.out.printf("  Card Read Block 12 - 15: %s%n", bytesToHex(read16Byte));
 //
 //            command = new int[]{0xFF, 0x00, 0x00, 0x00, 0x02, 0x30, 0x00}; // Чтение 16 байт начиная с нулевого блока
